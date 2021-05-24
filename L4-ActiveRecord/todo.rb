@@ -1,46 +1,34 @@
 require "active_record"
 
 class Todo < ActiveRecord::Base
-  def due_today?
-    due_date == Date.today
-  end
-
-  def overdue?
-    due_date < Date.today
-  end
-
-  def due_later?
-    due_date > Date.today
-  end
-
   def self.overdue
-    (Todo.all.filter { |todo| todo.overdue? })
+    where("due_date < ?", Date.today)
   end
 
   def self.due_today
-    (Todo.all.filter { |todo| todo.due_today? })
+    where("due_date = ?", Date.today)
   end
 
   def self.due_later
-    (Todo.all.filter { |todo| todo.due_later? })
+    where("due_date > ?", Date.today)
   end
 
   def to_displayable_string
     display_status = completed ? "[X]" : "[ ]"
-    display_date = due_today? ? nil : due_date
+    display_date = (due_date == Date.today) ? nil : due_date
     "#{id}.  #{display_status} #{todo_text} #{display_date}"
   end
 
-  def self.to_displayable_list(arr)
-    arr.map { |todo| todo.to_displayable_string }
+  def self.to_displayable_list
+    all.map { |todo| todo.to_displayable_string }
   end
 
   def self.add_task(new_task)
-    Todo.create!(todo_text: new_task[:todo_text], due_date: Date.today + new_task[:due_in_days], completed: false)
+    create!(todo_text: new_task[:todo_text], due_date: Date.today + new_task[:due_in_days], completed: false)
   end
 
   def self.mark_as_complete!(todo_id)
-    todo = Todo.find_by(id: todo_id)
+    todo = find_by(id: todo_id)
     if !todo.nil?
       todo.completed = true
       todo.save
@@ -55,15 +43,15 @@ class Todo < ActiveRecord::Base
     puts "My Todo-list\n\n"
 
     puts "Overdue\n"
-    puts to_displayable_list(Todo.overdue)
+    puts overdue.to_displayable_list
     puts "\n\n"
 
     puts "Due Today\n"
-    puts to_displayable_list(Todo.due_today)
+    puts due_today.to_displayable_list
     puts "\n\n"
 
     puts "Due Later\n"
-    puts to_displayable_list(Todo.due_later)
+    puts due_later.to_displayable_list
     puts "\n\n"
   end
 end
